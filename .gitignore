@@ -1,0 +1,4 @@
+tags
+*.swp
+
+data/data-acquisition/xeno-canto/*-downloads-*
