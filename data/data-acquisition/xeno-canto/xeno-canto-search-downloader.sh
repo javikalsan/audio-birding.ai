@@ -77,16 +77,16 @@ function download_files() {
     EXTENDED_NAME="${EXTENDED_NAME}size:${SIZE}-"
   fi
   DOWNLOAD_FOLDER="$(echo "$QUERY" | sed s/+/-/g)${EXTENDED_NAME}downloads-$(date +%s)"
-  mkdir "$SCRIPT_PATH/$DOWNLOAD_FOLDER"
+  mkdir "${SCRIPT_PATH}/${DOWNLOAD_FOLDER}"
   touch "${TEMPORARY_FOLDER}/${FILENAMES_FILE}"
   URL_LIST=$(echo "$1" | sed 's/\"//g' | sed 's/\/\//https:\/\//g' | sed 's/ /\n/g')
   echo -e "\nComputing download list"
   echo "$URL_LIST" | "$PARALLEL_BIN" -n 1 -P 8 --bar compute_filename_column "{}"
   URL_LIST="$(cat ${TEMPORARY_FOLDER}/${FILENAMES_FILE})"
   echo -e "\nDownloading files"
-  echo "$URL_LIST" | "$PARALLEL_BIN" -n 1 -P 8 --colsep " " --bar "$WGET_BIN" -q -O "$SCRIPT_PATH/$DOWNLOAD_FOLDER/{2}"-"$QUERY"."$FILE_TYPE" "{1}"
-  TOTAL_FILES_DOWNLOADED=$(find "$SCRIPT_PATH/$DOWNLOAD_FOLDER" -type f | wc -l)
-  echo -e "\nA total of $TOTAL_FILES_DOWNLOADED records have been downloaded at $SCRIPT_PATH/$DOWNLOAD_FOLDER"
+  echo "$URL_LIST" | "$PARALLEL_BIN" -n 1 -P 8 --colsep " " --bar "$WGET_BIN" -q -O "${SCRIPT_PATH}/${DOWNLOAD_FOLDER}/{2}"-"$QUERY"."$FILE_TYPE" "{1}"
+  TOTAL_FILES_DOWNLOADED=$(find "${SCRIPT_PATH}/${DOWNLOAD_FOLDER}" -type f | wc -l)
+  echo -e "\nA total of $TOTAL_FILES_DOWNLOADED records have been downloaded at ${SCRIPT_PATH}/${DOWNLOAD_FOLDER}"
   clean_the_house
 }
 
@@ -97,7 +97,7 @@ function compute_filename_column() {
 export -f compute_filename_column
 
 function generate_results_file() {
-  $CURL_BIN -s "$API_SEARCH_BASE_URL$QUERY" | $JQ_BIN > "$RESULTS_FILE"
+  $CURL_BIN -s "${API_SEARCH_BASE_URL}${QUERY}" | $JQ_BIN > "$RESULTS_FILE"
 }
 
 function generate_summary_content() {
@@ -138,8 +138,8 @@ function generate_downloads_list() {
   if [ "$PAGES" -gt 1 ] && [ "$DOWNLOAD" == "true" ]; then
     page_iterator=2
     while [ "$page_iterator" -le "$PAGES" ]; do
-      $CURL_BIN -s "$API_SEARCH_BASE_URL$QUERY&page=$page_iterator" | $JQ_BIN > "$RESULTS_FILE$page_iterator"
-      CURRENT_PAGE_DOWNLOAD_URLS="$($JQ_BIN '.recordings[] | .file' < "$RESULTS_FILE$page_iterator")"
+      $CURL_BIN -s "${API_SEARCH_BASE_URL}${QUERY}&page=$page_iterator" | $JQ_BIN > "$RESULTS_FILE$page_iterator"
+      CURRENT_PAGE_DOWNLOAD_URLS="$($JQ_BIN '.recordings[] | .file' < "${RESULTS_FILE}${page_iterator}")"
       DOWNLOAD_URLS=$(echo -e "$DOWNLOAD_URLS\n$CURRENT_PAGE_DOWNLOAD_URLS")
       (("page_iterator+=1"))
     done
