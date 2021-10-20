@@ -10,9 +10,9 @@ SCRIPT_FILES_PREFIX="xenoscript"
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit; pwd -P)"
 CURRENT_TIMESTAMP=$(date +%s)
 SEARCH_RESULTS_FILENAME="${SCRIPT_FILES_PREFIX}_search_results_$CURRENT_TIMESTAMP.json"
-export TEMPORARY_FOLDER='/tmp/'
+export TEMPORARY_FOLDER='/tmp'
 export FILENAMES_FILE="${SCRIPT_FILES_PREFIX}_filenames.log"
-RESULTS_FILE=$TEMPORARY_FOLDER$SEARCH_RESULTS_FILENAME
+RESULTS_FILE=${TEMPORARY_FOLDER}/${SEARCH_RESULTS_FILENAME}
 CURL_BIN=$(command -v curl)
 JQ_BIN=$(command -v jq)
 WGET_BIN=$(command -v wget)
@@ -78,11 +78,11 @@ function download_files() {
   fi
   DOWNLOAD_FOLDER="$(echo "$QUERY" | sed s/+/-/g)${EXTENDED_NAME}downloads-$(date +%s)"
   mkdir "$SCRIPT_PATH/$DOWNLOAD_FOLDER"
-  touch "$TEMPORARY_FOLDER$FILENAMES_FILE"
+  touch "${TEMPORARY_FOLDER}/${FILENAMES_FILE}"
   URL_LIST=$(echo "$1" | sed 's/\"//g' | sed 's/\/\//https:\/\//g' | sed 's/ /\n/g')
   echo -e "\nComputing download list"
   echo "$URL_LIST" | "$PARALLEL_BIN" -n 1 -P 8 --bar compute_filename_column "{}"
-  URL_LIST="$(cat $TEMPORARY_FOLDER$FILENAMES_FILE)"
+  URL_LIST="$(cat ${TEMPORARY_FOLDER}/${FILENAMES_FILE})"
   echo -e "\nDownloading files"
   echo "$URL_LIST" | "$PARALLEL_BIN" -n 1 -P 8 --colsep " " --bar "$WGET_BIN" -q -O "$SCRIPT_PATH/$DOWNLOAD_FOLDER/{2}"-"$QUERY"."$FILE_TYPE" "{1}"
   TOTAL_FILES_DOWNLOADED=$(find "$SCRIPT_PATH/$DOWNLOAD_FOLDER" -type f | wc -l)
@@ -92,7 +92,7 @@ function download_files() {
 
 function compute_filename_column() {
   prefix="$(echo "$1" | awk -F "/" '{print $4}')"
-  echo "$1 $prefix" >> "$TEMPORARY_FOLDER$FILENAMES_FILE"
+  echo "$1 $prefix" >> "${TEMPORARY_FOLDER}/${FILENAMES_FILE}"
 }
 export -f compute_filename_column
 
@@ -114,20 +114,20 @@ function filter_download_list_by_size() {
   URL_LIST=$(echo "$1" | sed 's/\"//g' | sed 's/\/\//https:\/\//g' | sed 's/ /\n/g')
   echo -e "\nFiltering urls by size limit"
   export FILTER_FILE="${SCRIPT_FILES_PREFIX}_filter.log"
-  touch "$TEMPORARY_FOLDER$FILTER_FILE"
+  touch "${TEMPORARY_FOLDER}/${FILTER_FILE}"
   echo "$URL_LIST" | $PARALLEL_BIN -n 1 -P 8 --bar add_file_if_size_is_under_limit
-  TOTAL_URLS_FILTERED=$(wc -l < $TEMPORARY_FOLDER$FILTER_FILE)  
+  TOTAL_URLS_FILTERED=$(wc -l < ${TEMPORARY_FOLDER}/${FILTER_FILE})  
   if [ "$TOTAL_URLS_FILTERED" -eq 0 ]; then
     echo -e "\nThere aren't any records smaller than $SIZE bytes"
     exit 0
   fi
-  DOWNLOAD_URLS=$(sed 's/https://g' < $TEMPORARY_FOLDER$FILTER_FILE)
+  DOWNLOAD_URLS=$(sed 's/https://g' < ${TEMPORARY_FOLDER}/${FILTER_FILE})
 }
 
 function add_file_if_size_is_under_limit() {
   FILE_SIZE="$(curl -sIL  "$1" | awk '/Content-Length/{print $2}' | sed 's/ /\n/g' | tr -cd '[:alnum:]._-' )"
   if [ -n "$SIZE" ] && [ -n "$FILE_SIZE" ] && [ "$SIZE" -gt "$FILE_SIZE" ]; then
-      echo "$1" >> "$TEMPORARY_FOLDER$FILTER_FILE"
+      echo "$1" >> "${TEMPORARY_FOLDER}/${FILTER_FILE}"
   fi
 }
 export -f add_file_if_size_is_under_limit
@@ -151,7 +151,7 @@ function generate_downloads_list() {
     filter_download_list_by_size "$DOWNLOAD_URLS"
   fi
   DOWNLOAD_LIST_FILE="${SCRIPT_FILES_PREFIX}_downloads_urls.log"
-  echo "$DOWNLOAD_URLS" > "$TEMPORARY_FOLDER$DOWNLOAD_LIST_FILE"
+  echo "$DOWNLOAD_URLS" > "${TEMPORARY_FOLDER}/${DOWNLOAD_LIST_FILE}"
 }
 
 function download_confirmation() {
@@ -179,7 +179,7 @@ function print_summary() {
 }
 
 function clean_the_house() {
-  rm "$TEMPORARY_FOLDER$SCRIPT_FILES_PREFIX"*
+  rm "${TEMPORARY_FOLDER}/${SCRIPT_FILES_PREFIX}"*
 }
 
 validate_binaries
