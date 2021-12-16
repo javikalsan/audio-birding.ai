@@ -5,7 +5,7 @@
 # https://www.xeno-canto.org/explore/api                  #
 ###########################################################
 
-API_SEARCH_BASE_URL="https://www.xeno-canto.org/api/2/recordings?query="
+API_SEARCH_BASE_URL="https://xeno-canto.org/api/2/recordings?query="
 SCRIPT_FILES_PREFIX="xenoscript"
 SCRIPT_PATH="$(cd -- "$(dirname "$0")" >/dev/null 2>&1 || exit; pwd -P)"
 CURRENT_TIMESTAMP=$(date +%s)
@@ -79,7 +79,7 @@ function download_files() {
   DOWNLOAD_FOLDER="$(echo "$QUERY" | sed s/+/-/g)${EXTENDED_NAME}downloads-$(date +%s)"
   mkdir "${SCRIPT_PATH}/${DOWNLOAD_FOLDER}"
   touch "${TEMPORARY_FOLDER}/${FILENAMES_FILE}"
-  URL_LIST=$(echo "$1" | sed 's/\"//g' | sed 's/\/\//https:\/\//g' | sed 's/ /\n/g')
+  URL_LIST=$(echo "$1" | sed 's/\"//g' | sed 's/http:\/\//https:\/\//g' | sed 's/ /\n/g')
   echo -e "\nComputing download list"
   echo "$URL_LIST" | "$PARALLEL_BIN" -n 1 -P 8 --bar compute_filename_column "{}"
   URL_LIST="$(cat ${TEMPORARY_FOLDER}/${FILENAMES_FILE})"
@@ -116,7 +116,7 @@ function filter_download_list_by_size() {
   export FILTER_FILE="${SCRIPT_FILES_PREFIX}_filter.log"
   touch "${TEMPORARY_FOLDER}/${FILTER_FILE}"
   echo "$URL_LIST" | $PARALLEL_BIN -n 1 -P 8 --bar add_file_if_size_is_under_limit
-  TOTAL_URLS_FILTERED=$(wc -l < ${TEMPORARY_FOLDER}/${FILTER_FILE})  
+  TOTAL_URLS_FILTERED=$(wc -l < ${TEMPORARY_FOLDER}/${FILTER_FILE})
   if [ "$TOTAL_URLS_FILTERED" -eq 0 ]; then
     echo -e "\nThere aren't any records smaller than $SIZE bytes"
     exit 0
